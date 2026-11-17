@@ -11,7 +11,7 @@ dieser Zweig baut es selbst dafür.
 - Lizenz: GPL-2.0 – bei Weitergabe Quellcode mitgeben. Keine Emby-Dateien übernehmen.
 
 ## Plan
-1. ✅ Quelle übernommen, ARMv7-Build + Starttest
+1. ✅ Quelle übernommen, ARMv7-Build + Starttest (Weboberfläche lief im Emulator nach ~200 s)
 2. Auf dem NAS testen (Speicher, Zusammenspiel mit der Website)
 3. (später) Butchies-Look / Gold Lounge
 4. Sparsamer Betrieb (Speicher, 4K-Sperre), eigene Erweiterungen
