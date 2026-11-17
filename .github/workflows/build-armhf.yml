@@ -1,0 +1,77 @@
+name: Butchies Media Center – ARMv7-Build für den NAS
+
+# Baut den Jellyfin-Server (Grundlage: v10.11.11) + Weboberfläche für 32-Bit-ARM (WD MyCloud EX2 Ultra)
+# und prüft im ARM-Emulator, dass er wirklich startet. Ergebnis: GitHub-Release mit .tar.xz.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  JF_VERSION: 10.11.11
+  WEB_TAG: v10.11.11
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Server bauen (linux-arm, eigenständig)
+        run: |
+          dotnet publish Jellyfin.Server/Jellyfin.Server.csproj -c Release -r linux-arm --self-contained true \
+            -p:DebugSymbols=false -p:DebugType=none -o out/jellyfin
+          ls -la out/jellyfin | head -40
+          file out/jellyfin/jellyfin || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Weboberfläche bauen (jellyfin-web ${{ env.WEB_TAG }})
+        run: |
+          git clone --depth 1 --branch "$WEB_TAG" https://github.com/jellyfin/jellyfin-web web
+          cd web
+          npm ci --no-audit --no-fund
+          npm run build:production
+          cp -r dist ../out/jellyfin/jellyfin-web
+
+      - name: Start-Test im ARMv7-Emulator (qemu)
+        run: |
+          docker run --privileged --rm tonistiigi/binfmt --install arm
+          docker run -d --name jftest --platform linux/arm/v7 -p 8096:8096 -v "$PWD/out/jellyfin:/jf:ro" arm32v7/debian:bookworm-slim \
+            sh -c 'apt-get update -qq && apt-get install -y -qq --no-install-recommends libicu72 libfontconfig1 ca-certificates ffmpeg >/dev/null && \
+                   mkdir -p /d/data /d/cache /d/config /d/log && /jf/jellyfin --datadir /d/data --cachedir /d/cache --configdir /d/config --logdir /d/log --ffmpeg /usr/bin/ffmpeg'
+          for i in $(seq 1 90); do
+            if curl -fs http://localhost:8096/System/Info/Public; then echo; echo "OK: Server läuft auf ARMv7"; break; fi
+            sleep 10
+          done
+          docker logs jftest 2>&1 | tail -60
+          curl -fs http://localhost:8096/System/Info/Public >/dev/null
+          curl -fs -o /dev/null -w "Web-Oberfläche: %{http_code}\n" http://localhost:8096/web/
+          docker rm -f jftest
+
+      - name: Paket packen
+        run: |
+          cd out
+          tar -cJf "butchies-media-center-${JF_VERSION}-armhf.tar.xz" jellyfin
+          sha256sum *.tar.xz > SHA256SUMS
+          ls -la
+
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="armhf-${JF_VERSION}-$(date -u +%Y%m%d-%H%M)"
+          gh release create "$TAG" out/*.tar.xz out/SHA256SUMS \
+            --title "NAS-Build (ARMv7) – Jellyfin ${JF_VERSION} – $(date -u +%d.%m.%Y)" \
+            --notes "Eigenständiger Build für WD MyCloud EX2 Ultra (32-Bit-ARM), im Emulator getestet. Commit ${GITHUB_SHA}."
