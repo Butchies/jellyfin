@@ -1,7 +1,8 @@
 name: Butchies Media Center – ARMv7-Build für den NAS
 
 # Baut den Jellyfin-Server (Grundlage: v10.11.11) + Weboberfläche für 32-Bit-ARM (WD MyCloud EX2 Ultra)
-# und prüft im ARM-Emulator, dass er wirklich startet. Ergebnis: GitHub-Release mit .tar.xz.
+# und prüft im ARM-Emulator, dass er wirklich startet.
+# DOTNET_EnableWriteXorExecute=0: .NET-Schreibschutz für Code aus – unter qemu und auf schwachen ARM-Geräten nötig/sinnvoll. Ergebnis: GitHub-Release mit .tar.xz.
 on:
   push:
     branches: [main]
@@ -48,7 +49,7 @@ jobs:
       - name: Start-Test im ARMv7-Emulator (qemu)
         run: |
           docker run --privileged --rm tonistiigi/binfmt --install arm
-          docker run -d --name jftest --platform linux/arm/v7 -p 8096:8096 -v "$PWD/out/jellyfin:/jf:ro" arm32v7/debian:bookworm-slim \
+          docker run -d --name jftest --platform linux/arm/v7 -p 8096:8096 -e DOTNET_EnableWriteXorExecute=0 -v "$PWD/out/jellyfin:/jf:ro" arm32v7/debian:bookworm-slim \
             sh -c 'apt-get update -qq && apt-get install -y -qq --no-install-recommends libicu72 libfontconfig1 ca-certificates ffmpeg >/dev/null && \
                    mkdir -p /d/data /d/cache /d/config /d/log && /jf/jellyfin --datadir /d/data --cachedir /d/cache --configdir /d/config --logdir /d/log --ffmpeg /usr/bin/ffmpeg'
           for i in $(seq 1 90); do
