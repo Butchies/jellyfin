@@ -19,7 +19,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -52,12 +52,14 @@ jobs:
           docker run -d --name jftest --platform linux/arm/v7 -p 8096:8096 -e DOTNET_EnableWriteXorExecute=0 -v "$PWD/out/jellyfin:/jf:ro" arm32v7/debian:bookworm-slim \
             sh -c 'apt-get update -qq && apt-get install -y -qq --no-install-recommends libicu72 libfontconfig1 ca-certificates ffmpeg >/dev/null && \
                    mkdir -p /d/data /d/cache /d/config /d/log && /jf/jellyfin --datadir /d/data --cachedir /d/cache --configdir /d/config --logdir /d/log --ffmpeg /usr/bin/ffmpeg'
-          for i in $(seq 1 90); do
-            if curl -fs http://localhost:8096/System/Info/Public; then echo; echo "OK: Server läuft auf ARMv7"; break; fi
+          # Beim ersten Start richtet Jellyfin die Datenbank ein (Startseite meldet so lange 503) – warten, bis /web/ wirklich da ist
+          for i in $(seq 1 150); do
+            c=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8096/web/ || true)
+            if [ "$c" = "200" ]; then echo "OK nach $((i*10)) s: Weboberfläche läuft auf ARMv7"; break; fi
             sleep 10
           done
-          docker logs jftest 2>&1 | tail -60
-          curl -fs http://localhost:8096/System/Info/Public >/dev/null
+          docker logs jftest 2>&1 | grep -v "InternalDatabaseMigration\|EntityFrameworkCore.Migrations" | tail -40
+          curl -fs http://localhost:8096/System/Info/Public; echo
           curl -fs -o /dev/null -w "Web-Oberfläche: %{http_code}\n" http://localhost:8096/web/
           docker rm -f jftest
 
