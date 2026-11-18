@@ -6,7 +6,7 @@ name: Butchies Media Center – ARMv7-Build für den NAS
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md']
+    paths-ignore: ['**.md', '.github/workflows/ffmpeg-armhf.yml']
   workflow_dispatch:
 
 permissions:
