@@ -14,6 +14,12 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+    - name: MpvQt holen (KDE)
+      shell: bash
+      run: |
+        rm -rf external/mpvqt
+        git clone https://invent.kde.org/libraries/mpvqt.git external/mpvqt
+        git -C external/mpvqt checkout 2ebbd38bf65d01be9c55d673ecd43c8bb9a6fc8e
     - name: Install Qt 6
       uses: jurplel/install-qt-action@v4
       with:

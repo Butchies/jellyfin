@@ -191,7 +191,7 @@ target_link_libraries(jmp_core
   Qt6::OpenGL
   Qt6::Xml
   Qt6::Gui
-  Qt6::DBus
+  $<$<BOOL:${LINUX_DBUS}>:Qt6::DBus>
   ${MPVQT_TARGET}
 )
 
