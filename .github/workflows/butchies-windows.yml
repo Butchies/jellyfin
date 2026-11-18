@@ -29,8 +29,8 @@ jobs:
     - name: WiX 3 finden/installieren
       shell: pwsh
       run: |
-        $c = Get-ChildItem 'C:\Program Files (x86)' -Filter candle.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-        if (-not $c) { choco install wixtoolset --version 3.14.1 -y --no-progress; $c = Get-ChildItem 'C:\Program Files (x86)' -Filter candle.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 }
+        $c = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*\bin\candle.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $c) { choco install wixtoolset --version 3.14.1 -y --no-progress; $c = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*\bin\candle.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 }
         "WIXBIN=$($c.DirectoryName)" | Out-File -FilePath $env:GITHUB_ENV -Append
         Write-Host "WiX: $($c.FullName)"
     - name: Install dependencies
@@ -41,7 +41,10 @@ jobs:
         curl -L https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip > ninja.zip
         unzip ninja.zip
         mv ninja.exe build/
-        curl -L https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20240304-git-9ac791c.7z/download > mpv.7z
+        for i in 1 2 3 4 5 6; do
+          curl -fL --retry 5 --retry-delay 5 --connect-timeout 30 -o mpv.7z https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20240304-git-9ac791c.7z/download && 7z t mpv.7z >/dev/null && break
+          echo "Download fehlgeschlagen, neuer Versuch $i"; rm -f mpv.7z; sleep 10
+        done
         7z x mpv.7z
         mkdir mpv
         mv include mpv
