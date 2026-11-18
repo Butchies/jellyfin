@@ -1,0 +1,61 @@
+name: FFmpeg für WD My Cloud (armhf, statisch, 64K-ausgerichtet)
+# Kleines, statisch gelinktes FFmpeg für das Butchies Media Center auf der WD My Cloud EX2 Ultra.
+# Der NAS-Kernel nutzt 32-KB-Speicherseiten -> Programm mit max-page-size 0x10000 linken.
+# Zweck: Ton (AC3/E-AC3/DTS/TrueHD …) in AAC umwandeln und Video unverändert in MP4 umpacken.
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/ffmpeg-armhf.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      FFVER: '7.1.1'
+    steps:
+      - name: Werkzeuge
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf nasm make pkg-config qemu-user-static
+      - name: FFmpeg holen
+        run: curl -fsSL https://ffmpeg.org/releases/ffmpeg-${FFVER}.tar.xz | tar -xJ
+      - name: Bauen
+        working-directory: ffmpeg-${{ env.FFVER }}
+        run: |
+          ./configure --enable-cross-compile --arch=arm --cpu=cortex-a9 --target-os=linux \
+            --cross-prefix=arm-linux-gnueabihf- --pkg-config=pkg-config \
+            --enable-static --disable-shared --pkg-config-flags=--static \
+            --extra-cflags='-O2 -mfpu=neon -mfloat-abi=hard' \
+            --extra-ldflags='-static -Wl,-z,max-page-size=0x10000 -Wl,-z,common-page-size=0x10000' \
+            --disable-debug --disable-doc --disable-ffplay --disable-network --disable-autodetect \
+            --disable-everything \
+            --enable-protocol=file,pipe \
+            --enable-demuxer=matroska,mov,avi,mpegts,mpegps,mp3,aac,ac3,eac3,dts,truehd,flac,ogg,wav,asf,flv,webm_dash_manifest \
+            --enable-muxer=mp4,mov,matroska,webm,adts,mpegts,ipod,null,image2,mjpeg,webvtt,ass,srt \
+            --enable-decoder=aac,aac_latm,ac3,eac3,dca,truehd,mlp,mp2,mp3,flac,vorbis,opus,alac,wmav2,pcm_s16le,pcm_s24le,pcm_s16be,pcm_dvd,pcm_bluray,h264,hevc,mpeg4,mjpeg,png,subrip,ass,ssa,webvtt,mov_text \
+            --enable-encoder=aac,mjpeg,webvtt,ass,srt \
+            --enable-parser=aac,ac3,dca,mlp,mpegaudio,h264,hevc,mpeg4video,flac,vorbis,opus,vp9,av1 \
+            --enable-bsf=h264_mp4toannexb,hevc_mp4toannexb,aac_adtstoasc,extract_extradata,dca_core,vp9_superframe \
+            --enable-filter=aresample,aformat,anull,scale,format,null,select,thumbnail \
+            --enable-swresample --enable-swscale
+          make -j"$(nproc)"
+          arm-linux-gnueabihf-strip ffmpeg ffprobe
+      - name: Prüfen (Ausrichtung + Start unter qemu)
+        working-directory: ffmpeg-${{ env.FFVER }}
+        run: |
+          arm-linux-gnueabihf-readelf -lW ffmpeg | grep LOAD
+          arm-linux-gnueabihf-readelf -lW ffmpeg | awk '/LOAD/{ if ($NF != "0x10000") { print "FALSCHE AUSRICHTUNG:", $0; exit 1 } }'
+          qemu-arm-static ./ffmpeg -hide_banner -version | head -n 3
+          ls -la ffmpeg ffprobe
+      - name: Paket
+        working-directory: ffmpeg-${{ env.FFVER }}
+        run: |
+          mkdir -p ../out && cp ffmpeg ffprobe ../out/ && cp COPYING.LGPLv2.1 COPYING.GPLv2 ../out/ 2>/dev/null || true
+          cd ../out && tar -cJf ../ffmpeg-${FFVER}-armhf-static-64k.tar.xz . && cd .. && sha256sum ffmpeg-*.tar.xz > SHA256SUMS-ffmpeg
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=ffmpeg-armhf-${FFVER}-$(date +%Y%m%d-%H%M)
+          gh release create "$TAG" ffmpeg-${FFVER}-armhf-static-64k.tar.xz SHA256SUMS-ffmpeg -R "$GITHUB_REPOSITORY" --latest=false \
+            --title "FFmpeg ${FFVER} armhf (statisch, 64K) für Butchies Media Center" \
+            --notes "Statisch gelinktes FFmpeg/FFprobe (LGPL, ohne GPL-Teile) für WD My Cloud EX2 Ultra (32-KB-Seiten). Quelle: ffmpeg.org ${FFVER}."
