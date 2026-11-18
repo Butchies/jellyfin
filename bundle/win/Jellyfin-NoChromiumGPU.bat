@@ -1,0 +1,1 @@
+start "" "Butchies Media Center.exe" "--disable-gpu"

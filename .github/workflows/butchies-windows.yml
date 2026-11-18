@@ -1,0 +1,71 @@
+name: Butchies Media Center – Windows-Player (basiert auf Jellyfin Desktop v2.0.0)
+# Baut den Windows-Player (Qt 6 + mpv: alle Formate, x265/HEVC, Kino-Ton) mit Butchies-Namen und -Symbol
+# und legt ButchiesMediaCenter-Setup.exe als Release ab (nicht als „latest“, das braucht build.sh für jellyfin-web).
+on:
+  push:
+    branches: [windows-app]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-win64:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Install Qt 6
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: "6.8.0"
+        arch: "win64_msvc2019_64"
+        modules: "qtwebengine qtpositioning qtwebchannel"
+    - name: WiX 3 finden/installieren
+      shell: pwsh
+      run: |
+        $c = Get-ChildItem 'C:\Program Files (x86)' -Filter candle.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $c) { choco install wixtoolset --version 3.14.1 -y --no-progress; $c = Get-ChildItem 'C:\Program Files (x86)' -Filter candle.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 }
+        "WIXBIN=$($c.DirectoryName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Host "WiX: $($c.FullName)"
+    - name: Install dependencies
+      run: |
+        mkdir build
+        curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe > vc_redist.x64.exe
+        sed -i 's#C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Redist\\MSVC\\v142\\vcredist_x64.exe#'"$(readlink -f vc_redist.x64.exe | sed 's#/\([a-z]\)/#\1:\\#g' | tr '/' '\\' | sed 's/\\/\\\\/g')#g" bundle/win/Bundle.wxs
+        curl -L https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip > ninja.zip
+        unzip ninja.zip
+        mv ninja.exe build/
+        curl -L https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20240304-git-9ac791c.7z/download > mpv.7z
+        7z x mpv.7z
+        mkdir mpv
+        mv include mpv
+        gendef libmpv-2.dll
+        mv libmpv-2.dll mpv/libmpv-2.dll
+        mv libmpv-2.def mpv.def
+        mv mpv.def libmpv.dll.a mpv/
+        mv mpv build/
+      shell: bash
+    - name: Build
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        cd build
+        set PATH=%PATH%;%WIXBIN%;%CD%
+        cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt6_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll -DCHECK_FOR_UPDATES=OFF ..
+        if errorlevel 1 exit /b 1
+        lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
+        ninja
+        if errorlevel 1 exit /b 1
+        ninja windows_package
+        if errorlevel 1 exit /b 1
+      shell: cmd
+    - name: Release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        EXE=$(ls build/JellyfinDesktop-*.exe | head -n1)
+        cp "$EXE" ButchiesMediaCenter-Setup.exe
+        TAG=windows-2.0.0-$(date +%Y%m%d-%H%M)
+        gh release create "$TAG" ButchiesMediaCenter-Setup.exe -R "$GITHUB_REPOSITORY" --latest=false \
+          --title "Butchies Media Center für Windows (Jellyfin Desktop 2.0.0)" \
+          --notes "Windows-Player für das Butchies Media Center. Basiert auf Jellyfin Desktop v2.0.0 (GPL-2.0), Quellcode im Zweig windows-app. Beim ersten Start die Serveradresse eingeben: http://<NAS-IP>:8097"
