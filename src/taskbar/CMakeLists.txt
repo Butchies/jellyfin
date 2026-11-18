@@ -1,5 +1,5 @@
 add_sources(TaskbarComponent.h TaskbarComponent.cpp)
 
-if(WIN32)
+if(FALSE)
   add_sources(TaskbarComponentWin.cpp TaskbarComponentWin.h)
 endif(WIN32)

@@ -1,13 +1,13 @@
 #include "TaskbarComponent.h"
 
-#if defined(Q_OS_WIN32)
+#if 0 // QtWinExtras gibt es unter Qt 6 nicht mehr
 #include "TaskbarComponentWin.h"
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
 TaskbarComponent& TaskbarComponent::Get()
 {
-#if defined(Q_OS_WIN32)
+#if 0 // QtWinExtras gibt es unter Qt 6 nicht mehr
   static TaskbarComponentWin instance;
   return instance;
 #else
