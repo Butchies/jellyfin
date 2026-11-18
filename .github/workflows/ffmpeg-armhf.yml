@@ -29,8 +29,8 @@ jobs:
             --disable-debug --disable-doc --disable-ffplay --disable-network --disable-autodetect \
             --disable-everything \
             --enable-protocol=file,pipe \
-            --enable-demuxer=matroska,mov,avi,mpegts,mpegps,mp3,aac,ac3,eac3,dts,truehd,flac,ogg,wav,asf,flv,webm_dash_manifest \
-            --enable-muxer=mp4,mov,matroska,webm,adts,mpegts,ipod,null,image2,mjpeg,webvtt,ass,srt \
+            --enable-demuxer=matroska,mov,avi,mpegts,mpegps,mp3,aac,ac3,eac3,dts,truehd,flac,ogg,wav,asf,flv,webm_dash_manifest,srt,ass,webvtt \
+            --enable-muxer=mp4,mov,matroska,webm,adts,mpegts,ipod,null,image2,mjpeg,webvtt,ass,srt,sup \
             --enable-decoder=aac,aac_latm,ac3,eac3,dca,truehd,mlp,mp2,mp3,flac,vorbis,opus,alac,wmav2,pcm_s16le,pcm_s24le,pcm_s16be,pcm_dvd,pcm_bluray,h264,hevc,mpeg4,mjpeg,png,subrip,ass,ssa,webvtt,mov_text \
             --enable-encoder=aac,mjpeg,webvtt,ass,srt \
             --enable-parser=aac,ac3,dca,mlp,mpegaudio,h264,hevc,mpeg4video,flac,vorbis,opus,vp9,av1 \
