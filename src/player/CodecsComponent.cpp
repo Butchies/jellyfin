@@ -18,6 +18,9 @@
 #include <QOperatingSystemVersion>
 #include <QCryptographicHash>
 #include <QTemporaryDir>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
 #ifdef HAVE_MINIZIP
 #include <minizip/unzip.h>
