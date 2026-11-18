@@ -17,8 +17,8 @@ jobs:
     - name: Install Qt 6
       uses: jurplel/install-qt-action@v4
       with:
-        version: "6.8.0"
-        arch: "win64_msvc2019_64"
+        version: "6.8.3"
+        arch: "win64_msvc2022_64"
         modules: "qtwebengine qtpositioning qtwebchannel"
     - name: WiX 3 finden/installieren
       shell: pwsh
