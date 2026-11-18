@@ -32,7 +32,7 @@ build() {
   if [ "$thr" = 1 ]; then CF="$CF -pthread"; LF="-pthread"; TH="--enable-pthreads --disable-w32threads --disable-os2threads"; fi
   emconfigure ../$src/configure $COMMON $TH --extra-cflags="$CF" --extra-ldflags="$LF" >/dev/null
   emmake make -j"$(nproc)" >/dev/null
-  local EXTRA="-sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=2GB"
+  local EXTRA="-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=128MB -sMAXIMUM_MEMORY=2GB"
   if [ "$thr" = 1 ]; then EXTRA="-pthread -sPTHREAD_POOL_SIZE=8 -sINITIAL_MEMORY=768MB"; fi
   emcc $CF -I. -I../$src "$HERE/player.c" libavformat/libavformat.a libavcodec/libavcodec.a libswscale/libswscale.a \
        libswresample/libswresample.a libavutil/libavutil.a \
