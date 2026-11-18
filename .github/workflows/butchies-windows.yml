@@ -64,7 +64,7 @@ jobs:
         set "B=%CD:\=/%"
         cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt6_DIR% -DMPV_INCLUDE_DIR=%B%/mpv/include -DMPV_LIBRARY=%B%/mpv/libmpv-2.dll.lib -DMPV_DLL=%B%/mpv/libmpv-2.dll -DUSE_STATIC_MPVQT=ON -DCHECK_FOR_UPDATES=OFF ..
         if errorlevel 1 exit /b 1
-        ninja
+        ninja -k 0
         if errorlevel 1 exit /b 1
         ninja windows_package
         if errorlevel 1 exit /b 1
