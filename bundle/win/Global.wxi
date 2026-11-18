@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Include>
   <?define ProductName=Butchies Media Center ?>
-  <?define ProductDesc=Butchies Media Center für Windows ?>
+  <?define ProductDesc=Butchies Media Center for Windows ?>
   <?define ProductUUID=b07c4e5d-6a1f-4c2e-9b8d-7e6f5a4b3c2d ?>
   <?define JellyfinWebsiteUrl=https://github.com/Butchies/jellyfin ?>
   <?define LanguageCode=1033 ?>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Include>
-  <Property Id="ARPCOMMENTS" Value="Butchies Media Center für Windows" />
+  <Property Id="ARPCOMMENTS" Value="Butchies Media Center for Windows" />
   <Property Id="ARPCONTACT" Value="Butchies" />
   <Property Id="ARPPRODUCTICON" Value="JellyfinDesktopIcon" />
   <Property Id="ARPURLINFOABOUT" Value="$(var.JellyfinWebsiteUrl)" />
