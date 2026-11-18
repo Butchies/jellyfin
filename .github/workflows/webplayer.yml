@@ -1,0 +1,41 @@
+name: Butchies Web-Player – Decoder-Kern (FFmpeg als WebAssembly)
+# Baut bmccore-st/mt (.js + .wasm) für den Browser-Player des Butchies Media Center.
+# Der Browser des Zuschauers entschlüsselt damit x265/HEVC und Kino-Ton selbst – das NAS streamt nur die Datei.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['webplayer/**', '.github/workflows/webplayer.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      EMVER: '3.1.74'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: webplayer
+      - name: Emscripten
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git
+          ./emsdk/emsdk install $EMVER && ./emsdk/emsdk activate $EMVER
+      - name: Bauen
+        working-directory: webplayer
+        run: |
+          source ../emsdk/emsdk_env.sh
+          OUT=$PWD/out bash build.sh
+      - name: Paket
+        working-directory: webplayer/out
+        run: |
+          cp ../player.c .
+          tar -cJf ../bmc-webplayer-core.tar.xz . && cd .. && sha256sum bmc-webplayer-core.tar.xz > SHA256SUMS-webplayer
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=webplayer-core-$(date +%Y%m%d-%H%M)
+          gh release create "$TAG" webplayer/bmc-webplayer-core.tar.xz webplayer/SHA256SUMS-webplayer -R "$GITHUB_REPOSITORY" --latest=false \
+            --title "Butchies Web-Player Decoder-Kern (FFmpeg 7.1.1 → WebAssembly)" \
+            --notes "Decoder-Kern für den Browser-Player des Butchies Media Center. LGPL-2.1, Quelle: webplayer/ und ffmpeg.org 7.1.1."
