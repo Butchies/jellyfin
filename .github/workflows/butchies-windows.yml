@@ -50,9 +50,10 @@ jobs:
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         cd build
         set PATH=%PATH%;%WIXBIN%;%CD%
-        cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt6_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll -DCHECK_FOR_UPDATES=OFF ..
-        if errorlevel 1 exit /b 1
         lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
+        if errorlevel 1 exit /b 1
+        cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt6_DIR% -DMPV_INCLUDE_DIR=%CD%/mpv/include -DMPV_LIBRARY=%CD%/mpv/libmpv-2.dll.lib -DMPV_DLL=%CD%/mpv/libmpv-2.dll -DUSE_STATIC_MPVQT=ON -DCHECK_FOR_UPDATES=OFF ..
+        if errorlevel 1 exit /b 1
         ninja
         if errorlevel 1 exit /b 1
         ninja windows_package

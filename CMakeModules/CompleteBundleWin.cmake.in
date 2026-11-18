@@ -15,7 +15,7 @@ list(APPEND SEARCHDIRS ${CEC_DIR})
 
 # fixup_bundle("${CMAKE_INSTALL_PREFIX}/Butchies Media Center.exe" "" "${SEARCHDIRS}") 
 #install(PROGRAMS ${VCREDIST_DIR}/vcredist_msvc2017_x64.exe DESTINATION .)
-file(INSTALL @MPV_LIBRARY@ DESTINATION "${CMAKE_INSTALL_PREFIX}")
+file(INSTALL @MPV_DLL@ DESTINATION "${CMAKE_INSTALL_PREFIX}")
 
 if(@DO_ENABLE_ANGLE_DEP@)
   message(STATUS "Deploying separate ANGLE deps")
